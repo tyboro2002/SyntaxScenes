@@ -3,21 +3,28 @@ import matplotlib.animation as animation
 import geopandas as gpd
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-from collections import deque
+from geopy.distance import geodesic
 from moviepy.editor import VideoFileClip, concatenate_videoclips
 import heapq
 import math
 from collections import deque
 
 # Define the countries for the animation
-start_country = 'Ukraine'
-end_country = 'Portugal'
+start_country = 'Russia'  # 'Russia'
+end_country = 'United States of America'  # 'United States of America'
 algorithm = "astar"  # supports "dfs", "bfs", "dijkstra", "astar"
+size = "full world"  # "full world", "europe",  # "africa", "asia", "north america", "south america", "australia", "antarctica"
 display_country_names = False
 exploration_animation_filename = "pathfinding/exploration_animation.mp4"
 path_animation_filename = "pathfinding/final_path_animation.mp4"
 concatenated_animation_filename = \
-    f'pathfinding/Final_Path_Animation_Path_Between_{start_country}_and_{end_country}_using_{algorithm}.mp4'
+    f'pathfinding/Final_Path_Animation_Path_Between_{
+    start_country.replace(" ", "_")
+    }_and_{
+    end_country.replace(" ", "_")
+    }_using_{
+    algorithm.replace(" ", "_")
+    }.mp4'
 exploration_fps = 2
 path_fps = 1
 
@@ -30,6 +37,101 @@ world = gpd.read_file(shapefile_path)
 # Reproject to WGS84 (EPSG:4326) for latitude/longitude
 world = world.to_crs(epsg=4326)
 
+
+def add_neighbors(adjacency_list, country1, country2):
+    """Manually add two countries as neighbors in the adjacency list.
+
+    Args:
+        adjacency_list (dict): The adjacency list dictionary.
+        country1 (str): The name of the first country.
+        country2 (str): The name of the second country.
+    """
+    if country1 in adjacency_list and country2 in adjacency_list:
+        adjacency_list[country1].add(country2)
+        adjacency_list[country2].add(country1)
+    else:
+        print(f"One or both countries ({country1}, {country2}) are not found in the adjacency list.")
+
+
+def update_country_geometry(world: gpd.GeoDataFrame, country_name: str = 'France',
+                            polygon_index: int = None):
+    # Filter out the geometry of the specified country
+    country_geom = world[world['SOVEREIGNT'] == country_name]['geometry']
+
+    # Check if the geometries are empty
+    if country_geom.empty:
+        print(f"No geometries found for country: {country_name}")
+        return world
+
+    # Get the current geometry
+    current_geometry = country_geom.values[polygon_index]
+
+    # print(current_geometry.geom_type)
+
+    # Check geometry type and update if necessary
+    if current_geometry.geom_type == 'MultiPolygon':
+        # Select the largest polygon if it's a MultiPolygon
+        largest_polygon = max(current_geometry.geoms, key=lambda poly: poly.area)
+        # print(largest_polygon)
+        # Replace the geometry in the GeoDataFrame
+        world.loc[world['SOVEREIGNT'] == country_name, 'geometry'] = largest_polygon
+    else:
+        # If it's already a Polygon, do nothing
+        print(f"{country_name} is already a single Polygon.")
+
+    return world
+
+
+def display_country_on_map(country_name: str = 'France', extent: [int] = [-180, 180, -90, 90],
+                           polygon_index: int = None, display_largest: bool = False):
+    # Filter out the geometry of the specified country
+    # print(world[world['SOVEREIGNT'] == country_name]['geometry'])
+    # print(world[world['SOVEREIGNT'] == country_name]['geometry'].values[polygon_index])
+    if polygon_index is not None:
+        country_geometry = world[world['SOVEREIGNT'] == country_name]['geometry'].values[polygon_index]
+    else:
+        country_geometry = world[world['SOVEREIGNT'] == country_name]['geometry']
+
+    print(country_geometry.geom_type)
+
+    # Handle MultiPolygon or single Polygon accordingly
+    if display_largest and country_geometry.geom_type == 'MultiPolygon':
+        # Default to the largest polygon if index is not provided or out of range
+        selected_polygon = max(country_geometry.geoms, key=lambda polygon: polygon.area)
+    else:
+        selected_polygon = country_geometry
+
+    # Set up the plot
+    fig, ax = plt.subplots(figsize=(15, 10), subplot_kw={'projection': ccrs.PlateCarree()})
+    ax.set_extent(extent, crs=ccrs.PlateCarree())  # Set the extent for the map
+    ax.add_feature(cfeature.BORDERS, linestyle=':', edgecolor='gray')
+    ax.add_feature(cfeature.COASTLINE)
+
+    # Plot the world map
+    world.boundary.plot(ax=ax, linewidth=1)
+
+    # Overlay the selected polygon with a distinct color or boundary
+    gpd.GeoSeries(selected_polygon).plot(ax=ax, edgecolor='red', linewidth=2, facecolor='none')
+
+    # Optionally, you can add the country names or markers if needed
+    locations = {country_name: (2.2137, 46.2276)}
+    if country_name in locations:
+        lon, lat = locations[country_name]
+        ax.plot(lon, lat, marker='o', color='red', markersize=6)
+        ax.text(lon, lat, country_name, fontsize=12, ha='center', color='black')
+
+    # Display the map
+    plt.show()
+
+
+# display_country_on_map(polygon_index = 1, display_largest = True)
+world = update_country_geometry(world, country_name='France', polygon_index=1)
+
+# To verify the change, print the updated geometry for France
+# print("updated country geometry")
+# print(world[world['SOVEREIGNT'] == 'France']['geometry'])
+# display_country_on_map()
+
 # Create a dictionary of country names and their coordinates
 locations = {}
 for idx, row in world.iterrows():
@@ -37,9 +139,11 @@ for idx, row in world.iterrows():
     centroid = row['geometry'].centroid
     locations[country] = (centroid.x, centroid.y)
 
+print(locations.keys())
+us_location = 'United States of America'
 # Correct specific coordinates
 locations['France'] = (2.2137, 46.2276)
-locations['United States'] = (-101.299591, 40.116386)
+locations[us_location] = (-101.299591, 40.116386)
 
 # Create an adjacency list for countries
 adjacency_list = {country: set() for country in world['SOVEREIGNT']}
@@ -52,6 +156,18 @@ for idx, row in world.iterrows():
             other_geometry = other_row['geometry']
             if geometry.intersects(other_geometry):
                 adjacency_list[country].add(other_country)
+
+# Add neighbors
+add_neighbors(adjacency_list, 'Iceland', 'Ireland')
+add_neighbors(adjacency_list, 'Belgium', 'United Kingdom')
+add_neighbors(adjacency_list, 'Iceland', 'Canada')
+
+
+# Calculate the distance between two countries using their coordinates
+def calculate_distance(country1, country2):
+    coord1 = locations[country1]
+    coord2 = locations[country2]
+    return geodesic(coord1[::-1], coord2[::-1]).kilometers
 
 
 def heuristic(a, b):
@@ -211,6 +327,25 @@ if algorithm == "dijkstra":
 if algorithm == "dfs":
     path, explored_nodes = dfs(start_country, end_country, adjacency_list)
 
+ext = [-180, 180, -90, 90]  # Default extent for full world
+
+if size == "europe":
+    ext = [-30, 60, 35, 75]
+elif size == "full world":
+    ext = [-180, 180, -90, 90]
+elif size == "africa":
+    ext = [-20, 55, -35, 40]
+elif size == "asia":
+    ext = [25, 180, 5, 80]
+elif size == "north america":
+    ext = [-170, -30, 5, 85]
+elif size == "south america":
+    ext = [-85, -30, -60, 15]
+elif size == "australia":
+    ext = [110, 180, -50, 10]
+elif size == "antarctica":
+    ext = [-180, 180, -90, -60]
+
 # Calculate path length
 path_length = calculate_path_length(path)
 
@@ -221,13 +356,8 @@ ax.axis('off')  # Hide the axis
 ax.add_feature(cfeature.BORDERS, linestyle=':', edgecolor='gray')
 ax.add_feature(cfeature.COASTLINE)
 world.boundary.plot(ax=ax, linewidth=1)
-
-ax.set_extent([-30, 60, 35, 75], crs=ccrs.PlateCarree())
+ax.set_extent(ext, crs=ccrs.PlateCarree())
 plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
-
-
-# -30, 60, 35, 75 # europe
-# -180, 180, -90, 90 # full world
 
 
 # Plot countries and their names only if they are within the map extent
@@ -284,7 +414,7 @@ ax.axis('off')  # Hide the axis
 ax.add_feature(cfeature.BORDERS, linestyle=':', edgecolor='gray')
 ax.add_feature(cfeature.COASTLINE)
 world.boundary.plot(ax=ax, linewidth=1)
-ax.set_extent([-30, 60, 35, 75], crs=ccrs.PlateCarree())
+ax.set_extent(ext, crs=ccrs.PlateCarree())
 plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
 
