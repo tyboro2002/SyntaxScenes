@@ -26,13 +26,15 @@ if __name__ == "__main__":
     tree = NaryTree(3)
 
     # Insert nodes with multiple values
-    tree.insert(5)
-    tree.insert(3)
-    tree.insert(7)
-    tree.insert(2)
-    tree.insert(6)
-    tree.insert(10)
-    tree.insert(12)
+    # tree.insert(5)
+    # tree.insert(3)
+    # tree.insert(7)
+    # tree.insert(2)
+    # tree.insert(6)
+    # tree.insert(10)
+    # tree.insert(12)
+
+    tree.animate_insertions(values)
 
     tree.traverse()
 
