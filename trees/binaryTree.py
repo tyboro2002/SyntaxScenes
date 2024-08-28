@@ -1,12 +1,21 @@
+import os
+
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import numpy as np
+
 from treesSettings import FPS, trees_base_path
 
 
 class BinaryTree:
     def __init__(self):
         self.root = None
+        self.frames_dir = 'frames'
+        self.fig, self.ax = plt.subplots()  # Ensure fig and ax are initialized properly
+        self.frames = []
+        self.step = 0
+
+        # Create directory to save frames
+        if not os.path.exists(self.frames_dir):
+            os.makedirs(self.frames_dir)
 
     def compute_positions(self, root, pos=None, level=0, pos_x=0, x_offset=4):
         """Compute the positions of nodes for visualization."""
@@ -56,32 +65,58 @@ class BinaryTree:
             return left
         return self.find_node(root.right, value)
 
+    def capture_frame(self):
+        pos = self.compute_positions(self.root)
+        self.draw_tree(self.ax, pos)
+
+        # Save the current frame as an image
+        frame_filename = os.path.join(self.frames_dir, f'frame_{self.step:03d}.png')
+        self.fig.savefig(frame_filename)
+        print(f"Saved frame {self.step} to {frame_filename}")
+        self.step += 1
+
     def insert(self, value):
         """Insert a value into the tree."""
         raise NotImplementedError("Subclasses should implement this method.")
 
     def animate_insertions(self, values):
-        """Animate the insertion of values into the binary search tree."""
-        fig, ax = plt.subplots()
-        done_frames = set()
-        frames = []
+        for value in values:
+            print(f"Updating frame {self.step} with value {value}")
+            self.insert(value)
+            self.capture_frame()
+            # self.step += 1
 
-        def update(frame):
-            nonlocal done_frames
-            if frame in done_frames:
-                return
-            done_frames.add(frame)
-            print(f"new frame with {frame} {values[frame]}")
-            self.insert(values[frame])
-            pos = self.compute_positions(self.root)
-            self.draw_tree(ax, pos)
-            fig.canvas.draw()
+        # Compile images into a video
+        self.compile_frames_to_video()
 
-            # Convert canvas to image
-            img = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-            img = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-            frames.append(img)
-            return []
+        # Clear the frames directory
+        self.clear_frames_directory()
 
-        ani = animation.FuncAnimation(fig, update, frames=len(values), repeat=False, interval=1000)
-        ani.save(f'{trees_base_path}{self.__class__.__name__.lower()}_tree_animation.mp4', writer='ffmpeg', fps=FPS)
+        plt.close(self.fig)
+
+    def compile_frames_to_video(self):
+        import subprocess
+        print(f"Compiling frames into video with {FPS} FPS...")
+        # Command to convert images to video using ffmpeg
+        command = [
+            'ffmpeg', '-y', '-framerate', str(FPS), '-i', os.path.join(self.frames_dir, 'frame_%03d.png'),
+            '-r', str(FPS), '-pix_fmt', 'yuv420p', f'{trees_base_path}{self.__class__.__name__.lower()}_tree_animation.mp4'
+        ]
+
+        subprocess.run(command, check=True)
+        print(f"Video saved as {trees_base_path}{self.__class__.__name__.lower()}_tree_animation.mp4")
+
+    def clear_frames_directory(self):
+        # Remove all files in the frames directory
+        for filename in os.listdir(self.frames_dir):
+            file_path = os.path.join(self.frames_dir, filename)
+            try:
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+                    print(f"Deleted file {file_path}")
+            except Exception as e:
+                print(f"Failed to delete {file_path}. Reason: {e}")
+
+        # Optionally, remove the directory itself
+        os.rmdir(self.frames_dir)
+        print(f"Cleared and removed frames directory: {self.frames_dir}")

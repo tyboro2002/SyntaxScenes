@@ -13,7 +13,10 @@ class AVLTree(BinaryTree):
     def get_balance(self, node):
         return 0 if not node else self.height(node.left) - self.height(node.right)
 
-    def right_rotate(self, y):
+    def right_rotate(self, y) -> TreeNode:
+        # Capture the state before rotation
+        self.capture_frame()
+
         x = y.left
         T2 = x.right
         x.right = y
@@ -22,7 +25,10 @@ class AVLTree(BinaryTree):
         self.update_height(x)
         return x
 
-    def left_rotate(self, x):
+    def left_rotate(self, x) -> TreeNode:
+        # Capture the state before rotation
+        self.capture_frame()
+
         y = x.right
         T2 = y.left
         y.left = x
@@ -35,7 +41,7 @@ class AVLTree(BinaryTree):
         """Insert a value into the AVL tree."""
         self.root = self._insert(self.root, value)
 
-    def _insert(self, node, value):
+    def _insert(self, node, value) -> TreeNode:
         if not node:
             return TreeNode(value)
 
