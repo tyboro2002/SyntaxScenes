@@ -8,8 +8,7 @@ from treesSettings import trees_base_path, FPS
 
 
 class NaryTree:
-    def __init__(self, n):
-        self.n = n  # Maximum number of children per node
+    def __init__(self):
         self.root = None
         self.step = 0
         self.frames_dir = 'frames'
@@ -19,29 +18,63 @@ class NaryTree:
             os.makedirs(self.frames_dir)
 
     def insert(self, value):
-        new_node = NaryTreeNode(value)
         if self.root is None:
-            self.root = new_node
+            self.root = NaryTreeNode(value)
         else:
-            self._insert_in_subtree(self.root, new_node)
+            # Insert the value and check if the root needs to be split
+            result = self._insert(self.root, value)
+            if isinstance(result, tuple):
+                # If the root was split, create a new root
+                new_root = NaryTreeNode(result[2])
+                new_root.children.append(result[0])
+                new_root.children.append(result[1])
+                self.root = new_root
 
-    def _insert_in_subtree(self, node, new_node):
-        if len(node.children) < self.n:
-            node.children.append(new_node)
+    def _insert(self, node, value):
+        # If the node is a leaf, insert the value directly
+        if len(node.children) == 0:
+            node.values.append(value)
+            node.values.sort()
+
+            if len(node.values) == 3:  # Node needs to be split
+                return self._split(node)
+            return node
         else:
-            # Recursively try to insert in the child nodes
-            for child in node.children:
-                if len(child.children) < self.n:
-                    self._insert_in_subtree(child, new_node)
-                    return
-            # If all child nodes are full, insert in the first child's subtree
-            self._insert_in_subtree(node.children[0], new_node)
+            # Determine which child to insert into
+            if value < node.values[0]:
+                index = 0
+            elif len(node.values) == 1 or value < node.values[1]:
+                index = 1
+            else:
+                index = 2
+
+            # Recursively insert the value
+            result = self._insert(node.children[index], value)
+            if isinstance(result, tuple):  # If the child was split
+                node.children[index] = result[0]
+                node.children.insert(index + 1, result[1])
+                node.values.insert(index, result[2])
+
+                if len(node.values) == 3:  # Node needs to be split
+                    return self._split(node)
+            return node
+
+    def _split(self, node):
+        # Split the node into two nodes and push the middle value up
+        left_node = NaryTreeNode(node.values[0])
+        right_node = NaryTreeNode(node.values[2])
+
+        if len(node.children) > 0:
+            left_node.children = node.children[:2]
+            right_node.children = node.children[2:]
+
+        return left_node, right_node, node.values[1]
 
     def traverse(self, node=None, depth=0):
         if node is None:
             node = self.root
         if node is not None:
-            print("  " * depth + str(node.value))
+            print("  " * depth + str(node.values))
             for child in node.children:
                 self.traverse(child, depth + 1)
 
@@ -50,7 +83,7 @@ class NaryTree:
         if pos is None:
             pos = {}
         if node is not None:
-            pos[node.value] = (pos_x, -level)
+            pos[str(node.values)] = (pos_x, -level)
             total_children = len(node.children)
             if total_children > 0:
                 dx = x_offset / total_children
@@ -66,9 +99,9 @@ class NaryTree:
 
         def add_edges(node):
             if node:
-                G.add_node(node.value)
+                G.add_node(str(node.values))
                 for child in node.children:
-                    G.add_edge(node.value, child.value)
+                    G.add_edge(str(node.values), str(child.values))
                     add_edges(child)
 
         add_edges(self.root)
@@ -77,7 +110,7 @@ class NaryTree:
         plt.figure(figsize=(12, 8))
         nx.draw(G, pos, with_labels=True, node_size=3000, node_color='skyblue', font_size=10, font_weight='bold',
                 font_color='black', arrows=False, edge_color='gray')
-        plt.title('N-ary Tree Visualization')
+        plt.title('2-3 Tree Visualization')
         if file_name is None:
             frame_filename = os.path.join(self.frames_dir, f'frame_{self.step:03d}.png')
         else:

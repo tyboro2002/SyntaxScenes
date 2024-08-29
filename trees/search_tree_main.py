@@ -23,7 +23,7 @@ if __name__ == "__main__":
     # print("Red-Black Tree done")
 
     # Create a new N-ary tree (for a 2-3 tree, max_children would be 3)
-    tree = NaryTree(3)
+    tree = NaryTree()
 
     # Insert nodes with multiple values
     # tree.insert(5)
