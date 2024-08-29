@@ -21,3 +21,15 @@ class NaryTreeNode:
     def __repr__(self):
         return f"NaryTreeNode(value={self.values}, children={len(self.children)})"
 
+
+class BTreeNode:
+    def __init__(self, order):
+        self.order = order  # Maximum number of children is order
+        self.values = []  # Store keys as a list
+        self.children = []  # Children will also be a list
+
+    def is_leaf(self):
+        return len(self.children) == 0
+
+    def __repr__(self):
+        return f"BTreeNode(values={self.values}, children={len(self.children)})"

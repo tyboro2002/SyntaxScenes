@@ -2,14 +2,14 @@ import os
 
 import matplotlib.pyplot as plt
 
-from treesSettings import FPS, trees_base_path
+from treesSettings import FPS, trees_base_path, FIGSIZE
 
 
 class BinaryTree:
     def __init__(self):
         self.root = None
         self.frames_dir = 'frames'
-        self.fig, self.ax = plt.subplots()  # Ensure fig and ax are initialized properly
+        self.fig, self.ax = plt.subplots(figsize=FIGSIZE)  # Ensure fig and ax are initialized properly
         self.frames = []
         self.step = 0
 
@@ -84,7 +84,6 @@ class BinaryTree:
             print(f"Updating frame {self.step} with value {value}")
             self.insert(value)
             self.capture_frame()
-            # self.step += 1
 
         # Compile images into a video
         self.compile_frames_to_video()
