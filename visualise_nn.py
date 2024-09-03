@@ -1,7 +1,7 @@
 import os
-
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
 
@@ -189,19 +189,18 @@ while current_accuracy < target_accuracy and iteration < max_itter:
     current_accuracy = accuracy_score(labels, predictions)
 
     # Step 7: Visualize and save the neural network with activations
-    fig = plt.figure(figsize=(12, 6))
+    fig = plt.figure(figsize=(15, 6))
+    gs = gridspec.GridSpec(1, 3, width_ratios=[1, 2, 1])  # Adjust width ratios to give more space to the center plot
 
     # Subplot for input pattern
-    ax1 = plt.subplot2grid((1, 2), (0, 0), colspan=1)
-    # Select the current input pattern for the iteration (use modulo to loop over patterns)
+    ax1 = plt.subplot(gs[0])  # Left subplot
     current_pattern = patterns[selected_pattern]
-    # Reshape and display the input pattern (assuming it is a 2x2 pattern)
     ax1.imshow(current_pattern.reshape(2, 2), cmap='gray', interpolation='none')
     ax1.set_title("Input Pattern")
     ax1.axis('off')
 
     # Subplot for neural network visualization
-    ax2 = plt.subplot2grid((1, 2), (0, 1), colspan=1)
+    ax2 = plt.subplot(gs[1])  # Center subplot
     ax2.axis('off')
 
     left, right, bottom, top = 0.15, 0.85, 0.1, 0.9
@@ -210,7 +209,7 @@ while current_accuracy < target_accuracy and iteration < max_itter:
     ax2.set_xlim(left - 0.1, right + 0.1)
     ax2.set_ylim(bottom - 0.1, top + 0.1)
 
-    # Draw the neural network on the right subplot
+    # Draw the neural network on the center subplot
     draw_neural_net(ax2, left, right, bottom, top, [patterns.shape[1], 2, len(np.unique(labels))],
                     [nn.coefs_[0], nn.coefs_[1]],
                     [nn.intercepts_[0], nn.intercepts_[1]],
@@ -219,6 +218,13 @@ while current_accuracy < target_accuracy and iteration < max_itter:
                         hidden_layer_outputs[selected_pattern],
                         output_layer_outputs[selected_pattern]
                     ], show_text=True)
+
+    # Subplot for input pattern
+    ax3 = plt.subplot(gs[2])  # Right subplot
+    current_pattern = patterns[selected_pattern]
+    ax3.imshow(current_pattern.reshape(2, 2), cmap='gray', interpolation='none')
+    ax3.set_title("Input Pattern")
+    ax3.axis('off')
 
     plt.suptitle(
         f"Neural Network Visualization with Activations\nIteration: {iteration} - Accuracy: {current_accuracy:.2f}",
