@@ -40,5 +40,5 @@ if __name__ == "__main__":
 
     # Create a B-tree of order 8
     b_tree = BTree(order=8)
-    b_tree.animate_insertions(values+[12, 12, 12, 12, 12, 12, 12, 12])
+    b_tree.animate_insertions(values)
     print("B Tree done")

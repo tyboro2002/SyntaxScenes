@@ -1,37 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 import os
 from sklearn.datasets import make_classification
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
-
-
-def generate_yin_yang_data(n_samples=1000):
-    """Generate a synthetic Yin-Yang dataset."""
-    np.random.seed(41)
-
-    # Create a mesh grid
-    x = np.linspace(-1, 1, int(np.sqrt(n_samples)))
-    y = np.linspace(-1, 1, int(np.sqrt(n_samples)))
-    x, y = np.meshgrid(x, y)
-
-    # Flatten the grid
-    x = x.flatten()
-    y = y.flatten()
-
-    # Generate labels for Yin-Yang pattern
-    labels = ((x ** 2 + y ** 2 < 0.5 ** 2) & (np.sqrt(x ** 2 + y ** 2) < 0.25)).astype(int)
-
-    # Add some random noise
-    x += np.random.randn(len(x)) * 0.05
-    y += np.random.randn(len(y)) * 0.05
-
-    # Combine x and y into feature array
-    X = np.column_stack((x, y))
-
-    return X, labels
 
 
 class NeuralNetworkVisualizer:
@@ -47,7 +20,7 @@ class NeuralNetworkVisualizer:
         if not os.path.exists(self.frames_dir):
             os.makedirs(self.frames_dir)
 
-        self.fig, self.ax = plt.subplots(figsize=(8, 6))
+        self.fig, self.ax = plt.subplots(figsize=(8, 12))
         self.ax.axis('off')  # Hide the axis
         self.frame_count = 0
 
@@ -122,17 +95,16 @@ class NeuralNetworkVisualizer:
 
 # Example usage
 # Generate synthetic data
-# X, y = make_classification(
-#     n_samples=200,
-#     n_features=2,
-#     n_informative=2,
-#     n_redundant=0,
-#     n_repeated=0,
-#     n_classes=2,
-#     n_clusters_per_class=1
-# )
-# Generate synthetic data
-X, y = generate_yin_yang_data(n_samples=1000)
+X, y = make_classification(
+    n_samples=200,
+    n_features=2,
+    n_informative=2,
+    n_redundant=0,
+    n_repeated=0,
+    n_classes=2,
+    n_clusters_per_class=1,
+    random_state=0
+)
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
@@ -140,6 +112,7 @@ model = MLPClassifier(
     hidden_layer_sizes=(50, 30),  # Increase the number of neurons and layers
     max_iter=1,
     warm_start=True,
-    solver='adam')
-visualizer = NeuralNetworkVisualizer(X_scaled, y, model, num_steps=250, fps=25)
+    solver='adam'
+)
+visualizer = NeuralNetworkVisualizer(X_scaled, y, model, num_steps=500, fps=25)
 visualizer.train_and_visualize()

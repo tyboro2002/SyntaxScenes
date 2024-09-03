@@ -5,27 +5,30 @@ import matplotlib.animation as animation
 
 def mandelbrot(c, max_iter):
     """
-    Determine the number of iterations before the Mandelbrot sequence for a complex number c diverges.
+    Vectorized Mandelbrot set calculation.
     """
-    z = 0
-    n = 0
-    while abs(z) <= 2 and n < max_iter:
-        z = z * z + c
-        n += 1
-    return n
+    z = np.zeros(c.shape, dtype=np.complex128)
+    div_time = np.zeros(c.shape, dtype=int)
+    mask = np.full(c.shape, True, dtype=bool)
+
+    for i in range(max_iter):
+        z[mask] = z[mask] * z[mask] + c[mask]
+        mask, old_mask = abs(z) <= 2, mask
+        div_time[old_mask & ~mask] = i
+
+    div_time[div_time == 0] = max_iter
+    return div_time
 
 
 def mandelbrot_set(xmin, xmax, ymin, ymax, width, height, max_iter):
     """
-    Generate the Mandelbrot set for a given range and resolution.
+    Generate the Mandelbrot set using vectorized operations.
     """
     r1 = np.linspace(xmin, xmax, width)
     r2 = np.linspace(ymin, ymax, height)
-    n3 = np.empty((width, height))
-    for i in range(width):
-        for j in range(height):
-            n3[i, j] = mandelbrot(r1[i] + 1j * r2[j], max_iter)
-    return n3
+    r1, r2 = np.meshgrid(r1, r2)
+    c = r1 + 1j * r2
+    return mandelbrot(c, max_iter)
 
 
 # Parameters for the Mandelbrot set
@@ -33,14 +36,15 @@ xmin, xmax = -2.0, 1.0
 ymin, ymax = -1.5, 1.5
 width, height = 800, 800
 max_iter = 256
-frames = 60  # Number of frames for the zoom animation
+frames = 800  # Number of frames for the zoom animation
+FPS = 20
 
 # Set the center for the zoom
-zoom_center_x = -0.75  # X-coordinate of the zoom center
-zoom_center_y = 0.0  # Y-coordinate of the zoom center
+zoom_center_x = -0.743643887037158704752191506114774  # X-coordinate of the zoom center
+zoom_center_y = 0.131825904205311970493132056385139  # Y-coordinate of the zoom center
 
 # Create a figure and axis
-fig, ax = plt.subplots(figsize=(10, 10))
+fig, ax = plt.subplots(figsize=(8, 12))
 
 # Initialize the plot with the first frame
 mandelbrot_image = mandelbrot_set(xmin, xmax, ymin, ymax, width, height, max_iter)
@@ -49,6 +53,7 @@ im = ax.imshow(mandelbrot_image.T, extent=[xmin, xmax, ymin, ymax], cmap='twilig
 
 # Update function for the animation
 def update(frame):
+    print(f"creating frame {frame}")
     zoom_factor = 1.5 ** (-frame / frames * 10)  # Adjust the zoom factor for smooth zooming
     new_width = (xmax - xmin) * zoom_factor
     new_height = (ymax - ymin) * zoom_factor
@@ -61,6 +66,7 @@ def update(frame):
     im.set_array(mandelbrot_image.T)
     im.set_extent([new_xmin, new_xmax, new_ymin, new_ymax])
     ax.set_title(f'Mandelbrot Set (Zoom Level: {frame})')
+    ax.axis('off')  # Hide the axis
     return [im]
 
 
@@ -70,6 +76,4 @@ ani = animation.FuncAnimation(fig, update, frames=frames, blit=True)
 
 print("saving animation")
 # Save the animation as an MP4 file
-ani.save('mandelbrot_zoom.mp4', writer='ffmpeg', fps=1)
-
-# plt.show()
+ani.save('mandelbrot_zoom.mp4', writer='ffmpeg', fps=FPS)

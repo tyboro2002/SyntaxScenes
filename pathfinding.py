@@ -10,20 +10,22 @@ import math
 from collections import deque
 
 # Define the countries for the animation
-start_country = 'Russia'  # 'Russia'
-end_country = 'United States of America'  # 'United States of America'
-algorithm = "astar"  # supports "dfs", "bfs", "dijkstra", "astar"
-size = "full world"  # "full world", "europe",  # "africa", "asia", "north america", "south america", "australia", "antarctica"
+start_country = 'Canada'  # 'Russia'
+end_country = 'Argentina'  # 'United States of America'
+algorithm = "dijkstra"  # supports "dfs", "bfs", "dijkstra", "astar"
+size = "america"
+# supports "full world", "europe",  # "africa", "asia", "north america", "south america", "australia", "antarctica"
+FIGSIZE = (8,12)
 display_country_names = False
 exploration_animation_filename = "pathfinding/exploration_animation.mp4"
 path_animation_filename = "pathfinding/final_path_animation.mp4"
 concatenated_animation_filename = \
     f'pathfinding/Final_Path_Animation_Path_Between_{
-    start_country.replace(" ", "_")
+        start_country.replace(" ", "_")
     }_and_{
-    end_country.replace(" ", "_")
+        end_country.replace(" ", "_")
     }_using_{
-    algorithm.replace(" ", "_")
+        algorithm.replace(" ", "_")
     }.mp4'
 exploration_fps = 2
 path_fps = 1
@@ -102,7 +104,7 @@ def display_country_on_map(country_name: str = 'France', extent: [int] = [-180, 
         selected_polygon = country_geometry
 
     # Set up the plot
-    fig, ax = plt.subplots(figsize=(15, 10), subplot_kw={'projection': ccrs.PlateCarree()})
+    fig, ax = plt.subplots(figsize=FIGSIZE, subplot_kw={'projection': ccrs.PlateCarree()})
     ax.set_extent(extent, crs=ccrs.PlateCarree())  # Set the extent for the map
     ax.add_feature(cfeature.BORDERS, linestyle=':', edgecolor='gray')
     ax.add_feature(cfeature.COASTLINE)
@@ -341,6 +343,8 @@ elif size == "north america":
     ext = [-170, -30, 5, 85]
 elif size == "south america":
     ext = [-85, -30, -60, 15]
+elif size == "america":
+    ext = [-170, -30, -60, 85]
 elif size == "australia":
     ext = [110, 180, -50, 10]
 elif size == "antarctica":
@@ -350,7 +354,7 @@ elif size == "antarctica":
 path_length = calculate_path_length(path)
 
 # Set up the plot for the exploration animation
-fig, ax = plt.subplots(figsize=(15, 10), subplot_kw={'projection': ccrs.PlateCarree()})
+fig, ax = plt.subplots(figsize=FIGSIZE, subplot_kw={'projection': ccrs.PlateCarree()})
 # ax.set_title(f'Exploration Animation: Path Between {start_country} and {end_country}')
 ax.axis('off')  # Hide the axis
 ax.add_feature(cfeature.BORDERS, linestyle=':', edgecolor='gray')
@@ -407,7 +411,7 @@ exploration_ani.save(exploration_animation_filename, writer='ffmpeg', fps=explor
 print(f"Exploration animation saved successfully as {exploration_animation_filename}")
 
 # Set up the plot for the final path animation
-fig, ax = plt.subplots(figsize=(15, 10), subplot_kw={'projection': ccrs.PlateCarree()})
+fig, ax = plt.subplots(figsize=FIGSIZE, subplot_kw={'projection': ccrs.PlateCarree()})
 # ax.set_title(f'Final Path Animation: Path Between {start_country} and {end_country}')
 ax.set_title(f'Path of length {path_length:.2f}')
 ax.axis('off')  # Hide the axis

@@ -14,18 +14,18 @@ cmap = mcolors.LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bins)
 # Get custom rules from the user
 # rule = input("Enter the rules (e.g., '23/3' for Conway's Game of Life): ")
 rule = "23/3"
-amount_of_frames = 100
-pattern = "pulsar"  # glider_shooter, toad, beacon, glider, pulsar, pentadecathlon or random
-FPS = 5  # normally 5
+amount_of_frames = 150
+pattern = "glider_shooter"  # glider_shooter, toad, beacon, glider, pulsar, pentadecathlon or random
+FPS = 8  # normally 5
 survival_str, birth_str = rule.split('/')
 survival = [int(n) for n in survival_str]
 birth = [int(n) for n in birth_str]
 
 # Grid dimensions
-GRID_WIDTH = 20  # Width of the grid (50)
-GRID_HEIGHT = 35  # Height of the grid (90)
+GRID_WIDTH = 50  # Width of the grid (50)
+GRID_HEIGHT = 90  # Height of the grid (90)
 
-X_OFFSET = 10  # 30
+X_OFFSET = 30  # 30
 Y_OFFSET = 1  # 1
 
 
@@ -50,7 +50,7 @@ def parse_grid_from_string(grid_string, width, height):
     # Determine the number of rows and columns in the pattern
     pattern_rows = len(lines)
     pattern_cols = len(lines[0])
-    print("shap is of size (rows, cols): ")
+    print("shape is of size (rows, cols): ")
     print(pattern_rows, pattern_cols)
 
     # Ensure the pattern fits within the grid

@@ -1,25 +1,20 @@
 import os
-
-import networkx as nx
 from matplotlib import pyplot as plt
-
 from treeNode import BTreeNode
+from tree import Tree
 from treesSettings import trees_base_path, FPS, FIGSIZE
 
 
-import os
-import networkx as nx
-from matplotlib import pyplot as plt
-from treeNode import BTreeNode
-from treesSettings import trees_base_path, FPS, FIGSIZE
-
-
-class BTree:
+class BTree(Tree):
     def __init__(self, order, title=None):
+        frames_dir = 'frames'
+        super().__init__(frames_dir=frames_dir, command=[
+            'ffmpeg', '-y', '-framerate', str(FPS), '-i', os.path.join(frames_dir, 'frame_%03d.png'),
+            '-r', str(FPS), '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', '-pix_fmt', 'yuv420p',
+            f'{trees_base_path}{self.__class__.__name__.lower()}_tree_animation.mp4'
+        ])
         self.order = order
         self.root = None
-        self.step = 0
-        self.frames_dir = 'frames'
         self.title = title if title else f'B-Tree of Order {self.order} Visualization'
 
         # Create directory to save frames
@@ -183,31 +178,3 @@ class BTree:
         yield node
         for child in node.children:
             yield from self._traverse_nodes(child)
-
-    def compile_frames_to_video(self):
-        import subprocess
-        print(f"Compiling frames into video with {FPS} FPS...")
-        # Command to convert images to video using ffmpeg
-        command = [
-            'ffmpeg', '-y', '-framerate', str(FPS), '-i', os.path.join(self.frames_dir, 'frame_%03d.png'),
-            '-r', str(FPS), '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', '-pix_fmt', 'yuv420p',
-            f'{trees_base_path}{self.__class__.__name__.lower()}_tree_animation.mp4'
-        ]
-
-        subprocess.run(command, check=True)
-        print(f"Video saved as {trees_base_path}{self.__class__.__name__.lower()}_tree_animation.mp4")
-
-    def clear_frames_directory(self):
-        # Remove all files in the frames directory
-        for filename in os.listdir(self.frames_dir):
-            file_path = os.path.join(self.frames_dir, filename)
-            try:
-                if os.path.isfile(file_path):
-                    os.remove(file_path)
-                    print(f"Deleted file {file_path}")
-            except Exception as e:
-                print(f"Failed to delete {file_path}. Reason: {e}")
-
-        # Optionally, remove the directory itself
-        os.rmdir(self.frames_dir)
-        print(f"Cleared and removed frames directory: {self.frames_dir}")
